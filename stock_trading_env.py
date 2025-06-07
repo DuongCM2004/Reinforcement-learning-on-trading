@@ -77,9 +77,15 @@ class StockTradingEnv(gym.Env):
 
         price = self.df.iloc[self.current_step]['close']
         transaction_occurred = False
+        reward = 0
+
+        # Track giá mua trung bình
+        if not hasattr(self, 'avg_buy_price'):
+            self.avg_buy_price = 0
+            self.total_buy_shares = 0
 
         if action == 1:  # Buy
-            buy_fraction = np.random.uniform(self.buy_min, self.buy_max)
+            buy_fraction = self.buy_min
             amount_to_spend = buy_fraction * self.cash
             shares_bought = amount_to_spend // price
 
@@ -89,8 +95,15 @@ class StockTradingEnv(gym.Env):
                 self.stock_owned += shares_bought
                 transaction_occurred = True
 
+                # Cập nhật avg_buy_price (trung bình giá vốn)
+                self.total_buy_shares += shares_bought
+                self.avg_buy_price = (
+                    (self.avg_buy_price * (self.total_buy_shares - shares_bought) + shares_bought * price)
+                    / self.total_buy_shares
+                )
+
         elif action == 2:  # Sell
-            sell_fraction = np.random.uniform(self.sell_min, self.sell_max)
+            sell_fraction = self.sell_min
             shares_to_sell = int(sell_fraction * self.stock_owned)
 
             if shares_to_sell > 0:
@@ -99,12 +112,19 @@ class StockTradingEnv(gym.Env):
                 self.stock_owned -= shares_to_sell
                 transaction_occurred = True
 
+                # Phần thưởng/phạt nếu giá bán khác giá mua
+                if self.total_buy_shares > 0:
+                    price_diff = price - self.avg_buy_price
+                    trade_reward = price_diff * shares_to_sell  # lãi/lỗ theo số cổ phiếu bán
+                    reward += trade_reward * 0.1  # có thể scale phần thưởng
+
         if transaction_occurred:
             self.last_transaction_step = self.current_step
 
-        # Apply penalty if no transaction for too long
+        # Phạt nếu quá lâu không giao dịch
         if (self.current_step - self.last_transaction_step) >= self.penalty_timeout:
             self.cash -= self.penalty_amount
+            reward -= self.penalty_amount  # cũng ảnh hưởng đến reward
 
         # Tính tổng tài sản
         portfolio_value = self.cash + self.stock_owned * price
@@ -112,18 +132,20 @@ class StockTradingEnv(gym.Env):
         # Điều kiện dừng
         if portfolio_value >= self.win_threshold:
             done = True
-            reward = 1_000_000
+            reward += 1_000_000
         elif portfolio_value < self.min_total_assets or self.cash <= self.max_cash_loss:
             done = True
-            reward = -1_000_000
+            reward -= 1_000_000
         else:
-            reward = portfolio_value / self.initial_cash - 1
+            # Cộng thêm phần reward dựa trên tổng tài sản
+            reward += portfolio_value / self.initial_cash - 1
 
         self.current_step += 1
         if self.current_step >= self.total_steps:
             truncated = True
 
         return self._get_observation(), reward, done, truncated, info
+
 
     def render(self):
         step = min(self.current_step, len(self.df) - 1)

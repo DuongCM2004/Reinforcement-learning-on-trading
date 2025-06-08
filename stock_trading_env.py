@@ -33,11 +33,11 @@ class StockTradingEnv(gym.Env):
         self.max_cash_loss = max_cash_loss
         self.win_threshold = win_threshold
         self.render_mode = render_mode
-
+        self.negative_cash_penalty = 500
         self.action_space = spaces.Discrete(3)  # 0 = hold, 1 = buy, 2 = sell
 
         # Observation: [cash, stock_owned, current_price, volume, high, low]
-        self.observation_space = spaces.Box(low=0, high=np.inf, shape=(6,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=0, high=np.inf, shape=(11,), dtype=np.float32)
 
         self.reset()
 
@@ -53,6 +53,11 @@ class StockTradingEnv(gym.Env):
             row['volume'],
             row['high'],
             row['low'],
+            row['feature_close'],
+            row['feature_open'],
+            row['feature_high'],
+            row['feature_low'],
+            row['feature_volume']
         ], dtype=np.float32)
         return obs
 
@@ -84,6 +89,16 @@ class StockTradingEnv(gym.Env):
             self.avg_buy_price = 0
             self.total_buy_shares = 0
 
+        # ⚠️ CHÍNH SÁCH: ÉP BÁN nếu cash < 0
+        forced_sell = False
+        if self.cash < 0 and self.stock_owned > 0:
+            action = 2  # Bắt buộc sell
+            forced_sell = True
+            sell_fraction = self.sell_max
+            info['forced_action'] = 'forced_sell_due_to_negative_cash'
+        else:
+            sell_fraction = self.sell_min  # Mặc định
+
         if action == 1:  # Buy
             buy_fraction = self.buy_min
             amount_to_spend = buy_fraction * self.cash
@@ -94,8 +109,6 @@ class StockTradingEnv(gym.Env):
                 self.cash -= cost
                 self.stock_owned += shares_bought
                 transaction_occurred = True
-
-                # Cập nhật avg_buy_price (trung bình giá vốn)
                 self.total_buy_shares += shares_bought
                 self.avg_buy_price = (
                     (self.avg_buy_price * (self.total_buy_shares - shares_bought) + shares_bought * price)
@@ -103,21 +116,20 @@ class StockTradingEnv(gym.Env):
                 )
 
         elif action == 2:  # Sell
-            sell_fraction = self.sell_min
+            # CHÍNH SÁCH: Ép bán nếu giá giảm > 20% so với giá mua
+            if not forced_sell and self.total_buy_shares > 0 and price < self.avg_buy_price * 0.8:
+                sell_fraction = self.sell_max
+                info['forced_action'] = 'forced_sell_due_to_20_percent_loss'
             shares_to_sell = int(sell_fraction * self.stock_owned)
-
             if shares_to_sell > 0:
                 revenue = shares_to_sell * price * (1 - self.transaction_fee)
                 self.cash += revenue
                 self.stock_owned -= shares_to_sell
                 transaction_occurred = True
-
-                # Phần thưởng/phạt nếu giá bán khác giá mua
                 if self.total_buy_shares > 0:
                     price_diff = price - self.avg_buy_price
-                    trade_reward = price_diff * shares_to_sell  # lãi/lỗ theo số cổ phiếu bán
-                    reward += trade_reward * 0.1  # có thể scale phần thưởng
-
+                    trade_reward = price_diff * shares_to_sell
+                    reward += trade_reward * 0.1
         if transaction_occurred:
             self.last_transaction_step = self.current_step
 
@@ -139,6 +151,10 @@ class StockTradingEnv(gym.Env):
         else:
             # Cộng thêm phần reward dựa trên tổng tài sản
             reward += portfolio_value / self.initial_cash - 1
+        
+        if self.cash < 0:
+            reward -= self.negative_cash_penalty
+            info['penalty'] = 'negative_cash_penalty_applied'
 
         self.current_step += 1
         if self.current_step >= self.total_steps:

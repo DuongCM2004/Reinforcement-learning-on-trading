@@ -117,9 +117,9 @@ class StockTradingEnv(gym.Env):
 
         elif action == 2:  # Sell
             # CHÍNH SÁCH: Ép bán nếu giá giảm > 20% so với giá mua
-            if not forced_sell and self.total_buy_shares > 0 and price < self.avg_buy_price * 0.8:
-                sell_fraction = self.sell_max
-                info['forced_action'] = 'forced_sell_due_to_20_percent_loss'
+            # if not forced_sell and self.total_buy_shares > 0 and price < self.avg_buy_price * 0.8:
+            #     sell_fraction = self.sell_max
+            #     info['forced_action'] = 'forced_sell_due_to_20_percent_loss'
             shares_to_sell = int(sell_fraction * self.stock_owned)
             if shares_to_sell > 0:
                 revenue = shares_to_sell * price * (1 - self.transaction_fee)

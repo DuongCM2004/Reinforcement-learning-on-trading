@@ -12,7 +12,7 @@ df['feature_close'] = df['close'].pct_change()
 df['feature_open'] = df['open'] / df['close']
 df['feature_high'] = df['high'] / df['close']
 df['feature_low'] = df['low'] / df['close']
-df['feature_volume'] = df['volume'] / df['volume'].rolling(7*24).max()
+df['feature_volume'] = df['volume'] / df['volume'].rolling(7).max()
 
 df.dropna(inplace=True)
 # Create environment factory
@@ -33,7 +33,7 @@ model.save("ppo_stock_trading")
 
 # Test run
 obs = env.reset()
-for i in range(1000):
+for i in range(10000):
     action, _states = model.predict(obs)
     obs, reward, done, info = env.step(action)
     env.render()

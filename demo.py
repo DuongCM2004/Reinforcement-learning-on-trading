@@ -3,7 +3,7 @@ import pandas as pd
 # Load and preprocess the data
 df = pd.read_csv('Pep_historical_data_StockScan.csv')
 df.columns = df.columns.str.lower()
-print(df.head())
+print(df['date'].head())
 # Create features
 df['feature_close'] = df['close'].pct_change()
 df['feature_open'] = df['open'] / df['close']

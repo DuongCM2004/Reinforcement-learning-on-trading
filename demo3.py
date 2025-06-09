@@ -1,12 +1,15 @@
 import pandas as pd
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv
-from stock_trading_env import StockTradingEnv
+from stock_trading_env1 import StockTradingEnv
 
 # Load and preprocess the data
 df = pd.read_csv('Pep_historical_data_StockScan.csv')
 df.columns = df.columns.str.lower()
-print(df.head())
+df['date'] = pd.to_datetime(df['date'])  # Chuyển về kiểu datetime nếu chưa
+
+# Sắp xếp tăng dần (từ cũ đến mới)
+df = df.sort_values(by='date', ascending=True)
 # Create features
 df['feature_close'] = df['close'].pct_change()
 df['feature_open'] = df['open'] / df['close']

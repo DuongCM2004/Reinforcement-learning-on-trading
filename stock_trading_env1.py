@@ -140,7 +140,7 @@ class StockTradingEnv(gym.Env):
                 if self.total_buy_shares > 0:
                     price_diff = price - self.avg_buy_price
                     trade_reward = price_diff * shares_to_sell
-                    reward += trade_reward * 0.1
+                    reward += trade_reward
 
         if transaction_occurred:
             self.last_transaction_step = self.current_step

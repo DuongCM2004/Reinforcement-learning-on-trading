@@ -109,7 +109,7 @@ for timestep in range(1000000):
         # for s, a, r, s_next in simulated_transitions:
         #     replay_buffer.add(s, a, r, s_next)
 
-        model.learn(total_timesteps=10000, reset_num_timesteps=False)
+        model.learn(total_timesteps=2048, reset_num_timesteps=False)
 
     obs = next_obs
     if done[0]:

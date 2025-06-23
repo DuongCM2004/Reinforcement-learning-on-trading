@@ -6,7 +6,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 from stock_trading_env1 import StockTradingEnv
 
 # ==== Load test data ====
-test_df = pd.read_csv('Pep_historical_data_StockScan_test.csv')
+test_df = pd.read_csv('Pep_historical_data_StockScan_test1.csv')
 test_df.columns = test_df.columns.str.lower()
 test_df['date'] = pd.to_datetime(test_df['date'])
 test_df = test_df.sort_values(by='date', ascending=True)
@@ -15,6 +15,7 @@ test_df['feature_open'] = test_df['open'] / test_df['close']
 test_df['feature_high'] = test_df['high'] / test_df['close']
 test_df['feature_low'] = test_df['low'] / test_df['close']
 test_df['feature_volume'] = test_df['volume'] / test_df['volume'].rolling(7).max()
+
 test_df.dropna(inplace=True)
 
 # ==== Create test environment ====

@@ -37,7 +37,7 @@ class StockTradingEnv(gym.Env):
         self.action_space = spaces.Box(low=np.array([-1.0, 0.0]), high=np.array([1.0, 1.0]), dtype=np.float32)
 
         # Observation: [cash, stock_owned, current_price, volume, high, low]
-        self.observation_space = spaces.Box(low=0, high=np.inf, shape=(11,), dtype=np.float32)
+        self.observation_space = spaces.Box(low=0, high=np.inf, shape=(23,), dtype=np.float32)
 
         self.reset()
 
@@ -57,7 +57,19 @@ class StockTradingEnv(gym.Env):
             row['feature_open'],
             row['feature_high'],
             row['feature_low'],
-            row['feature_volume']
+            row['feature_volume'],
+            row['Rolling_Mean_5'],
+            row['Rolling_Std_5'],
+            row['Momentum_5'],
+            row['Volatility_5'],
+            row['RSI_14'],
+            row['MACD'],
+            row['MACD_Signal'],
+            row['Bollinger_Upper'],
+            row['Bollinger_Lower'], 
+            row['Volume_Change'],
+            row['Volume_Rolling_Mean_5'],
+            row['Volume_Spike']
         ], dtype=np.float32)
         return obs
 
@@ -140,7 +152,7 @@ class StockTradingEnv(gym.Env):
                 if self.total_buy_shares > 0:
                     price_diff = price - self.avg_buy_price
                     trade_reward = price_diff * shares_to_sell
-                    reward += trade_reward
+                    reward += trade_reward * 0.1
 
         if transaction_occurred:
             self.last_transaction_step = self.current_step

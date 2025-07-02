@@ -14,7 +14,7 @@ df['feature_close'] = df['close'].pct_change()
 df['feature_open'] = df['open'] / df['close']
 df['feature_high'] = df['high'] / df['close']
 df['feature_low'] = df['low'] / df['close']
-df['feature_volume'] = df['volume'] / df['volume'].rolling(7).max()
+df['feature_volume'] = df['volume'] / df['volume'].rolling(5).max()
 ### === 2. MOMENTUM FEATURES === ###
 window = 5
 df["Rolling_Mean_5"] = df["close"].rolling(window=window).mean()

@@ -85,7 +85,7 @@ optimizer = torch.optim.Adam(dynamics_model.parameters(), lr=1e-3)
 real_buffer = []
 obs = env.reset()
 
-for timestep in range(400000):
+for timestep in range(20000000):
     action, _ = model.predict(obs)
     next_obs, reward, done, info = env.step(action)
 

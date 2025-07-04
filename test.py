@@ -3,10 +3,10 @@ import numpy as np
 import torch
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv
-from stock_trading_env1 import StockTradingEnv
+from test_env import StockTradingEnv
 
 # ==== Load test data ====
-df = pd.read_csv('Pep_historical_data_StockScan_test1.csv')
+df = pd.read_csv('Pep_historical_data_StockScan_test.csv')
 df.columns = df.columns.str.lower()
 df['date'] = pd.to_datetime(df['date'])
 df = df.sort_values(by='date', ascending=True)
@@ -62,13 +62,36 @@ model = PPO.load("ppo_stock_trading_with_planning", env=test_env)
 # ==== Run test episode ====
 obs = test_env.reset()
 total_reward = 0
+transaction_log = []
 while True:
-    action, _states = model.predict(obs)
+    action, _ = model.predict(obs)
     obs, reward, done, info = test_env.step(action)
-    total_reward += reward[0]
     test_env.render()
+    total_reward += reward[0]
+    # Ghi log
+    current_step = test_env.envs[0].current_step
+    price = test_env.envs[0].df.iloc[current_step]['close']
+    cash = test_env.envs[0].cash
+    stock_owned = test_env.envs[0].stock_owned
+
+    transaction_log.append({
+        'step': current_step,
+        'date': test_env.envs[0].df.iloc[current_step]['date'],
+        'action_type': float(action[0][0]),
+        'raw_amount': float(action[0][1]),
+        'price': price,
+        'cash': cash,
+        'stock_owned': stock_owned,
+        'reward': reward[0],
+        'portfolio_value': cash + stock_owned * price,
+        'done': done[0]
+    })
+
     if done[0]:
         break
 
 print(f"\n✅ Total reward on test set: {total_reward:.2f}")
+
+df_log = pd.DataFrame(transaction_log)
+df_log.to_csv('predict_transaction_history_test.csv', index=False)
 

@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv
-from test_env import StockTradingEnv
+from stock_trading_env1 import StockTradingEnv
 
 # ==== Load test data ====
 df = pd.read_csv('Pep_historical_data_StockScan_test.csv')
